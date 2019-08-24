@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>shadow button</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+  <style>
+    .container{
+      position:absolute;
+      top:0;
+      left:10%;
+      width:80%;
+      height:100px;
+      overflow:hidden ;
+      white-space: nowrap;
+    }
+
+    .container > .item {
+      position:absolute;
+      display:inline-block;
+      width:25%;
+      height:100%;
+      box-sizing: border-box;
+    }
+    .container img{
+      /* position:absolute; */
+      width:80%;
+      height:auto;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+        
+    }
+    .move-left {
+      animation-name: to-left;
+      animation-delay: 0;
+      animation-duration: 1s;
+      animation-fill-mode: forwards;
+    }
+
+
+    @keyframes to-left {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(-100%);
+        }
+    }
+
+
+    .move-right {
+      animation-name: to-right;
+      animation-delay: 0;
+      animation-duration: 1s;
+      animation-fill-mode: forwards;
+    }
+
+
+    @keyframes to-right {
+        from {
+          transform: translateX(0);
+        }
+        to {
+          transform: translateX(100%);
+        }
+    }
+
+    .icon-container {
+      width:85%;
+      height:100px;
+      position:absolute;
+      left:7.5%;
+      right:7.5%;
+      top:0;
+    }
+    .icon-container > .left-button {
+      position:absolute;
+      left:0;
+      /* transform:translateX(-100%); */
+
+      top: 40%;
+    }
+    .icon-container > .right-button {
+      position:absolute;
+      right:0;
+      /* transform:translateX(100%); */
+      top: 40%;
+    }
+
+    .disable {
+      display:none !important;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="carousel"></div>
+
+
+
+<script>
+
+
+
+
+
+
+
+//console.log(document.querySelector('.left-button'))
+
+
+class Carousel {
+	
+  
+	constructor(imgArr=[],numOfCol = 4,id='carousel'){
+  	this.imgArr = imgArr;
+    this.cols = numOfCol;
+    this.id = id;
+    let temp = imgArr.length<=4?0:(imgArr.length-4);
+    this.boundary = [0,temp];
+    this.startIndex = 0;
+    this.animating = false;
+    this.init();
+  }
+	
+  init () {
+    let width = 25;
+    let vessel = document.getElementById(this.id);
+
+    let str = this.imgArr.map((url,index) => this.template(url,index,width)).join('');
+    
+
+    str=`<div class="container">${str}</div>`
+    str+=`
+    <div class="icon-container">
+    		<i class="fa fa-chevron-left left-button"></i>
+    		<i class="fa fa-chevron-right right-button"></i>      
+    <div>
+  
+      `;    
+    
+    vessel.innerHTML = str;
+    this.refreshIcon();
+    
+    document.querySelector('.left-button').addEventListener('click',this.trigger(true));
+    document.querySelector('.right-button').addEventListener('click',this.trigger(false));   
+    document.querySelectorAll('.item')[0].addEventListener('animationstart',()=> {this.animating=true;
+ this.refreshIcon();
+});
+    document.querySelectorAll('.item').forEach(domNode =>{
+      domNode.addEventListener('animationend',event => {
+        let node = event.target;
+
+        //node.style['left'] = startIndex*(-24)+'%';
+        let originIndex = node.getAttribute("data-index");
+        //node.style['left'] = '0%';
+        node.classList.remove('move-left');
+        node.classList.remove('move-right');
+        node.style['left'] = `${(originIndex - this.startIndex)*(25)}%`;
+
+
+        this.animating=false;
+
+      }); 
+
+    })     
+  }
+
+	refreshIcon (){
+
+  	document.querySelectorAll(`#${this.id} i`).forEach(node => {node.classList.remove('disable')});
+    if(this.startIndex === this.boundary[1]){
+      let node = document.querySelector(`#${this.id} .left-button`);
+      //node.classList.remove('disable');
+      node.classList.add('disable');
+    }
+    if(this.startIndex === this.boundary[0]){
+      let node = document.querySelector(`#${this.id} .right-button`);
+      //node.classList.remove('disable');
+      node.classList.add('disable');
+    }    
+    
+  }
+  template (url,index,width) {
+    const left = (index*width)+'%';
+    return `
+      <div class="item" style="left:${left}" data-index=${index}>
+        <img src="${url}" alt="" />
+      </div>   
+    `
+  }
+  
+  trigger(towardLeft){
+  	return event => {
+      if(this.animating) return;
+      else{
+
+
+        let className =towardLeft?'move-left':'move-right';
+        //console.log(this.startIndex)
+
+        this.startIndex = this.startIndex+(towardLeft?1:-1); 
+        //console.log("after "+this.startIndex)
+        document.querySelectorAll('.item').forEach(node => {
+          node.classList.remove('move-left');
+          node.classList.remove('move-right');
+          void node.offsetWidth;
+          node.classList.add(className);
+
+        })           
+      }
+
+    }
+  }
+}
+let imgArr = ['https://www.gstatic.com/webp/gallery/1.jpg',
+							'https://www.gstatic.com/webp/gallery/2.jpg',
+              'https://www.gstatic.com/webp/gallery/3.jpg',
+							'https://www.gstatic.com/webp/gallery/4.jpg',
+              'https://www.gstatic.com/webp/gallery/5.jpg',
+              'https://www.gstatic.com/webp/gallery/1.jpg',
+							'https://www.gstatic.com/webp/gallery/2.jpg',
+              'https://www.gstatic.com/webp/gallery/3.jpg',
+							'https://www.gstatic.com/webp/gallery/4.jpg',
+              'https://www.gstatic.com/webp/gallery/5.jpg',
+];
+let inst = new Carousel(imgArr);
+
+
+    
+</script>
+</body>
+</html>
