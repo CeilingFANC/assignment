@@ -35,8 +35,9 @@
     .move-left {
       animation-name: to-left;
       animation-delay: 0;
-      animation-duration: 1s;
+      animation-duration: 0.3s;
       animation-fill-mode: forwards;
+      animation-timing-function: linear;
     }
 
 
@@ -49,12 +50,12 @@
         }
     }
 
-
     .move-right {
       animation-name: to-right;
       animation-delay: 0;
-      animation-duration: 1s;
+      animation-duration: 0.3s;
       animation-fill-mode: forwards;
+      animation-timing-function: linear;
     }
 
 
@@ -96,7 +97,10 @@
 </head>
 <body>
 
-  <div id="carousel"></div>
+  <div style="padding-top: 50px;position">
+    <div id="carousel"></div>
+  </div>
+  
 
 
 
@@ -117,58 +121,80 @@ class Carousel {
 	constructor(imgArr=[],numOfCol = 4,id='carousel'){
   	this.imgArr = imgArr;
     this.cols = numOfCol;
+    this.width = 25;
     this.id = id;
     let temp = imgArr.length<=4?0:(imgArr.length-4);
     this.boundary = [0,temp];
     this.startIndex = 0;
     this.animating = false;
-    this.init();
+    this.animationQueue = [];
+
+    this.render(); //render html
+    this.didMount();  // add event lisenter
   }
 	
-  init () {
-    let width = 25;
-    let vessel = document.getElementById(this.id);
-
-    let str = this.imgArr.map((url,index) => this.template(url,index,width)).join('');
+  didMount () {
     
+    document.querySelector(`#${this.id} .left-button`).addEventListener('click',this.trigger(true));
+    document.querySelector(`#${this.id} .right-button`).addEventListener('click',this.trigger(false));   
 
-    str=`<div class="container">${str}</div>`
-    str+=`
-    <div class="icon-container">
-    		<i class="fa fa-chevron-left left-button"></i>
-    		<i class="fa fa-chevron-right right-button"></i>      
-    <div>
-  
-      `;    
-    
-    vessel.innerHTML = str;
-    this.refreshIcon();
-    
-    document.querySelector('.left-button').addEventListener('click',this.trigger(true));
-    document.querySelector('.right-button').addEventListener('click',this.trigger(false));   
-    document.querySelectorAll('.item')[0].addEventListener('animationstart',()=> {this.animating=true;
- this.refreshIcon();
-});
-    document.querySelectorAll('.item').forEach(domNode =>{
-      domNode.addEventListener('animationend',event => {
-        let node = event.target;
+    document.querySelector(`#${this.id} .container`).addEventListener('animationend',event => {
+      let node = event.target;
+      const eventObj = this.animationQueue[0];
 
-        //node.style['left'] = startIndex*(-24)+'%';
-        let originIndex = node.getAttribute("data-index");
-        //node.style['left'] = '0%';
-        node.classList.remove('move-left');
-        node.classList.remove('move-right');
-        node.style['left'] = `${(originIndex - this.startIndex)*(25)}%`;
+      //cleanup animation
+      let originIndex = node.getAttribute("data-index");
+      node.classList.remove('move-left');
+      node.classList.remove('move-right');
+      void node.offsetWidth;
+      //set final position for image
+      node.style['left'] = `${(originIndex - eventObj.startIndex)*(this.width)}%`;
 
+      //check if finished the current animation AND if there is another one waiting in queue
+      eventObj.count--;
+      if(eventObj.count===0){
+        this.animationQueue.shift();
+        if(this.animationQueue.length !== 0) this.startAnimation(eventObj.className);
+      } 
+      
 
-        this.animating=false;
+    }); 
+     
+  }
+  trigger(towardLeft){
+  	return event => {
+      //quit if reach limit
+      if((towardLeft && this.startIndex === this.boundary[1])
+      &&(!towardLeft && this.startIndex === this.boundary[0])){
+        return;
+      }
 
-      }); 
+      //create animation object waiting for enqueue
+      let className =towardLeft?'move-left':'move-right';
+      this.startIndex = this.startIndex+(towardLeft?1:-1); 
+      let eventObj = {count:this.imgArr.length,startIndex:this.startIndex,className:className};
+      
+      //make button disappear
+      this.refreshIcon();
+      //start animation if it is the first animation
+      if(this.animationQueue.length ===0 )this.startAnimation(className);
+      this.animationQueue.push(eventObj);           
 
-    })     
+    }
   }
 
-	refreshIcon (){
+  startAnimation (className) {
+    document.querySelectorAll(`#${this.id} .item`).forEach(node => {
+      node.classList.remove('move-left');
+      node.classList.remove('move-right');
+      void node.offsetWidth;
+      node.classList.add(className);
+    });
+  }
+
+
+  //update icon
+	refreshIcon (startIndex){
 
   	document.querySelectorAll(`#${this.id} i`).forEach(node => {node.classList.remove('disable')});
     if(this.startIndex === this.boundary[1]){
@@ -183,37 +209,35 @@ class Carousel {
     }    
     
   }
-  template (url,index,width) {
-    const left = (index*width)+'%';
+  template (url,index) {
+    const left = (index*this.width)+'%';
     return `
       <div class="item" style="left:${left}" data-index=${index}>
         <img src="${url}" alt="" />
       </div>   
     `
   }
+  render (){
+    let vessel = document.getElementById(this.id);
+
+    let str = this.imgArr.map((url,index) => this.template(url,index)).join('');
+    
+    str=`<div class="container">${str}</div>`
+    str+=`
+    <div class="icon-container">
+    		<i class="fa fa-chevron-left left-button"></i>
+    		<i class="fa fa-chevron-right right-button"></i>      
+    <div>
   
-  trigger(towardLeft){
-  	return event => {
-      if(this.animating) return;
-      else{
-
-
-        let className =towardLeft?'move-left':'move-right';
-        //console.log(this.startIndex)
-
-        this.startIndex = this.startIndex+(towardLeft?1:-1); 
-        //console.log("after "+this.startIndex)
-        document.querySelectorAll('.item').forEach(node => {
-          node.classList.remove('move-left');
-          node.classList.remove('move-right');
-          void node.offsetWidth;
-          node.classList.add(className);
-
-        })           
-      }
-
-    }
+      `; 
+    str=`<div style="position:relative">${str}</div>`
+       
+    
+    vessel.innerHTML = str;
+    this.refreshIcon();
   }
+
+
 }
 let imgArr = ['https://www.gstatic.com/webp/gallery/1.jpg',
 							'https://www.gstatic.com/webp/gallery/2.jpg',
