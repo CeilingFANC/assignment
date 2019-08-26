@@ -13,11 +13,9 @@
     border: 3px solid transparent;
     background-clip: padding-box;
     display: inline-block;
-    /* box-shadow: 0 1px 0 1px grey inset; */
     }
 
     .dot.choosed{
-        /* box-shadow: 0 0 0 0.1px blue, 0 1px 0 1px #bbb inset; */
     }
   </style>
 </head>
@@ -31,66 +29,101 @@
     </div>
   
     <script>
-        let arr = [{name:'Not_Pink',color:'#E2CCC9',shadow:'#BAACA9'}, {name:'Sea_Blue',color:'#92CACD',shadow:'#7EADB3'},{name:'Navy_Blue',color:'#3F5980',shadow:'#33435C'}]
-        let choosedColor = {choosed:null}
-        colorSwitcher(arr,choosedColor);
 
-        function clickHandler_generate(id,obj,cb){
-            return function (event,callback) {
-            let color = event.target.getAttribute('data-color');
-            let name = event.target.getAttribute('data-name');
-            let shadow = event.target.getAttribute('data-shadow');
-        
-            if(color) {
-                obj.choosed = {name:name,color:color,shadow:shadow};
-            cb(id,obj.choosed);
+        class ColorSwitcher {
+            constructor(id, arr, choosedColor){
+                this.id = id;
+                this.arr = arr;
+                this._choosedColor = {...choosedColor};
+                this.render();
+            }
+            clickHandler = event =>{
+                let color = event.target.getAttribute('data-color');
+                let name = event.target.getAttribute('data-name');
+                let shadow = event.target.getAttribute('data-shadow');
+            
+                if(color) {
+                    this._choosedColor.choosed = {name:name,color:color,shadow:shadow};
+                    this.changeText();
+                }
+                
+            }
+            set setColor (color){
+                this._choosedColor = {choosed:{...color}};
+                this.changeText();
+            } 
+            get getColor () {
+                return this._choosedColor;
+            }
+            changeText(){
+                if(this._choosedColor.choosed === null){
+                    document.querySelector(`#${this.id} .color-switcher-text`).innerText = `Please Select A Color`;
+                    let colorNodeArr = document.querySelectorAll(`#${this.id} .color-switcher-container > span`);
+                     colorNodeArr.forEach(node =>{
+                        let shadow = node.getAttribute('data-shadow');
+                        node.style['boxShadow']='0 1px 0 1px '+shadow+' inset'
+                    });
+
+                }else{
+                    let {name,color} = this._choosedColor.choosed;
+                    name = name.replace(/_/g,' ');
+                    document.querySelector(`#${this.id} .color-switcher-text`).innerText = `Color - ${name}`;
+                    //update text
+                    let colorNodeArr = document.querySelectorAll(`#${this.id} .color-switcher-container > span`);
+                    //update ring
+                    colorNodeArr.forEach(node =>{
+                        let shadow = node.getAttribute('data-shadow');
+                        if(node.getAttribute('data-color') === color){
+                            //node.classList.add("choosed");
+                        //box-shadow: 0 0 0 0.1px blue, 0 1px 0 1px #bbb inset;
+                            node.style['boxShadow']='0 0 0 0.1px blue, 0 1px 0 1px '+shadow+' inset'
+                        }else{
+                            //node.classList.remove("choosed");
+                            node.style['boxShadow']='0 1px 0 1px '+shadow+' inset'
+                        } 
+                    });
+                }
+            }
+            render () {
+                
+                let node = document.querySelector(`#${this.id}`);
+                let t = this.arr.map(val => this.template(val)).join('');
+                t = `
+                <div>
+                    <div>
+                        <span class="color-switcher-text">Please Select A Color</span>
+                    </div>
+                    <div class="color-switcher-container">${t}</div>
+                </div>
+                `;
+                node.innerHTML=t;
+                node.addEventListener('click',this.clickHandler);
+                let colorNodeArr = document.querySelectorAll(`#${this.id} .color-switcher-container > span`);
+                colorNodeArr.forEach(node =>{
+                        let shadow = node.getAttribute('data-shadow');
+                        node.style['boxShadow']='0 1px 0 1px '+shadow+' inset'
+                });
+            }
+
+
+            template (colorObj){
+                let {name,color,shadow} = colorObj;
+                let style = `background-color:${color};`
+                return `
+                    <span class="dot" 
+                                style=${style}
+                        data-color=${color}
+                        data-name =${name}
+                        data-shadow=${shadow}
+                    > 
+                    </span>
+                    `;
             }
         }
-        }
-        function changeText(id,colorObj){
-        let {name,color} = colorObj;
-        name = name.replace(/_/g,' ');
-            document.querySelector(`#${id} .color-switcher-text`).innerText = `Color - ${name}`;
-        //update text
-        let colorArr = document.querySelectorAll(`#${id} .color-switcher-container > span`);
-            //update ring
-        colorArr.forEach(node =>{
-            let shadow = node.getAttribute('data-shadow');
-            if(node.getAttribute('data-color') === color){
-                //node.classList.add("choosed");
-            //box-shadow: 0 0 0 0.1px blue, 0 1px 0 1px #bbb inset;
-            node.style['boxShadow']='0 0 0 0.1px blue, 0 1px 0 1px '+shadow+' inset'
-            }else{
-                //node.classList.remove("choosed");
-            node.style['boxShadow']='0 1px 0 1px '+shadow+' inset'
-            } 
-        });
-        
-        console.log(colorArr)
-        
-        }
 
-        function colorSwitcher (arr,choosedColor) {
-            let id = 'color-switcher';
-            let temp = document.querySelector(`#${id} > .color-switcher-container`);
-        let t = arr.map(val => template(val)).join('');
-        temp.innerHTML=t;
-        const clickHandler = clickHandler_generate(id, choosedColor,changeText);
-        temp.addEventListener('click',clickHandler);
-        }
-
-        function template (colorObj){
-            let {name,color,shadow} = colorObj;
-            return `
-            <span class="dot" 
-                        style=${'background-color:'+color+';box-shadow: 0 1px 0 1px '+shadow+' inset;'}
-                data-color=${color}
-                data-name =${name}
-                data-shadow=${shadow}
-            > 
-            </span>
-        `;
-        }
+        let arr = [{name:'Not_Pink',color:'#E2CCC9',shadow:'#BAACA9'}, {name:'Sea_Blue',color:'#92CACD',shadow:'#7EADB3'},{name:'Navy_Blue',color:'#3F5980',shadow:'#33435C'}]
+        let choosedColor = {choosed:null}
+        let cs = new ColorSwitcher("color-switcher",arr,choosedColor);
 
     </script>
 </body>
