@@ -48,13 +48,7 @@
                 }
                 
             }
-            set setColor (color){
-                this._choosedColor = {choosed:{...color}};
-                this.changeText();
-            } 
-            get getColor () {
-                return this._choosedColor;
-            }
+
             changeText(){
                 if(this._choosedColor.choosed === null){
                     document.querySelector(`#${this.id} .color-switcher-text`).innerText = `Please Select A Color`;
